@@ -5,32 +5,29 @@
     <button id="start">Start screening</button>
 
     <script>
-      /* REPLACE: set your ids */
-      const ASSISTANT_ID = "0e518834-8969-441a-a215-dc181b2c9f87";
-      const PUBLIC_API_KEY = "b0c5c612-2941-48c2-8438-ea8b3845eaf7";
-      const WEBHOOK_URL = "https://hook.eu2.make.com/lttta6cgk2zg1ilrt1lr32auy7xr7yfx";
-      /* end replace */
+      // set these three
+      const RETELL_PUBLISHABLE_KEY = "llm_e6dc23c156762ddbba0b871bc089";
+      const RETELL_AGENT_ID = "agent_d1c59419d8f57d135929ccd0d5";
+      const WEBHOOK_URL = "https://hook.eu2.make.com/5jt8r97pjmkxom8y9u8ierjkmyn322ab";
 
-      // read record and name from URL, e.g., ?rec=recXXXX&name=First%20Last
-      const u = new URL(window.location.href);
+      // read Airtable params
+      const u = new URL(location.href);
       const recId = u.searchParams.get("rec") || "";
       const fullName = u.searchParams.get("name") || "";
 
-      let vapiInstance = null;
-      (function (d, t) {
-        const g = d.createElement(t), s = d.getElementsByTagName(t)[0];
-        g.src = "https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js";
-        g.defer = true; g.async = true; s.parentNode.insertBefore(g, s);
-        g.onload = function () {
-          vapiInstance = window.vapiSDK.run({
-            apiKey: PUBLIC_API_KEY,
-            assistant: ASSISTANT_ID,
-            metadata: { airtableRecordId: recId, candidateName: fullName, webhookUrl: WEBHOOK_URL },
-            config: { position: "hidden" }
-          });
-          document.getElementById("start").onclick = () => vapiInstance.start();
-        };
-      })(document, "script");
+      // load Retell client
+      (function(d,t){
+        const s=d.createElement(t); s.src="https://cdn.retellai.com/webclient/v1.js"; s.defer=true; s.onload=ready; d.head.appendChild(s);
+      })(document,"script");
+
+      function ready(){
+        const client = window.Retell.init({ publishableKey: RETELL_PUBLISHABLE_KEY });
+        const call = client.createCall({
+          agentId: RETELL_AGENT_ID,
+          metadata: { airtableRecordId: recId, candidateName: fullName, webhookUrl: WEBHOOK_URL }
+        });
+        document.getElementById("start").onclick = () => call.start();
+      }
     </script>
   </body>
 </html>
