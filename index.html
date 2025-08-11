@@ -1,33 +1,47 @@
 <!doctype html>
 <html>
-  <head><meta charset="utf-8"><title>Screening Call</title></head>
-  <body>  
-    <button id="start">Start screening</button>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Assistant</title>
+  <!-- Vapi widget -->
+  <script src="https://unpkg.com/@vapi-ai/client-sdk-react/dist/embed/widget.umd.js" async type="text/javascript"></script>
+</head>
+<body>
+  <vapi-widget
+    public-key="b0c5c612-2941-48c2-8438-ea8b3845eaf7"
+    assistant-id="0e518834-8969-441a-a215-dc181b2c9f87"
+    mode="voice"
+    size="compact">
+  </vapi-widget>
 
-    <script>
-      // set these three
-      const RETELL_PUBLISHABLE_KEY = "llm_e6dc23c156762ddbba0b871bc089";
-      const RETELL_AGENT_ID = "agent_d1c59419d8f57d135929ccd0d5";
-      const WEBHOOK_URL = "https://hook.eu2.make.com/5jt8r97pjmkxom8y9u8ierjkmyn322ab";
+  <script>
+    // 1) Read IDs from the email link, e.g. /?rid=xxx&t=yyy
+    const qs = new URLSearchParams(location.search);
+    const rid = qs.get("rid") || null;
+    const token = qs.get("t") || null;
 
-      // read Airtable params
-      const u = new URL(location.href);
-      const recId = u.searchParams.get("rec") || "";
-      const fullName = u.searchParams.get("name") || "";
+    // 2) Pass IDs into the call + force recording on
+    const widget = document.querySelector('vapi-widget');
+    const overrides = {
+      recordingEnabled: true,
+      variableValues: { rid, token }
+    };
+    widget.setAttribute('assistant-overrides', JSON.stringify(overrides));
 
-      // load Retell client
-      (function(d,t){
-        const s=d.createElement(t); s.src="https://cdn.retellai.com/webclient/v1.js"; s.defer=true; s.onload=ready; d.head.appendChild(s);
-      })(document,"script");
-
-      function ready(){
-        const client = window.Retell.init({ publishableKey: RETELL_PUBLISHABLE_KEY });
-        const call = client.createCall({
-          agentId: RETELL_AGENT_ID,
-          metadata: { airtableRecordId: recId, candidateName: fullName, webhookUrl: WEBHOOK_URL }
-        });
-        document.getElementById("start").onclick = () => call.start();
-      }
-    </script>
-  </body>
+    // 3) (Optional) Also log basic events to Make (client-side)
+    const MAKE_WEBHOOK = "https://hook.eu1.make.com/REPLACE_WITH_YOUR_MAKE_WEBHOOK";
+    function logToMake(event, extra={}) {
+      if (!MAKE_WEBHOOK.startsWith("https://hook")) return; // skip until you paste URL
+      fetch(MAKE_WEBHOOK, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ source:"client", event, rid, token, ...extra })
+      }).catch(()=>{});
+    }
+    widget.addEventListener('call-start',  () => logToMake('call-start'));
+    widget.addEventListener('call-end',    () => logToMake('call-end'));
+    widget.addEventListener('error', (e) => logToMake('error', { detail:String(e?.detail||"") }));
+  </script>
+</body>
 </html>
