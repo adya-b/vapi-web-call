@@ -3,8 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Assistant</title>
-  <!-- Vapi widget -->
+  <title>Screening</title>
   <script src="https://unpkg.com/@vapi-ai/client-sdk-react/dist/embed/widget.umd.js" async type="text/javascript"></script>
 </head>
 <body>
@@ -16,32 +15,15 @@
   </vapi-widget>
 
   <script>
-    // 1) Read IDs from the email link, e.g. /?rid=xxx&t=yyy
+    // optional: pass IDs from email
     const qs = new URLSearchParams(location.search);
     const rid = qs.get("rid") || null;
     const token = qs.get("t") || null;
-
-    // 2) Pass IDs into the call + force recording on
     const widget = document.querySelector('vapi-widget');
-    const overrides = {
+    widget.setAttribute('assistant-overrides', JSON.stringify({
       recordingEnabled: true,
       variableValues: { rid, token }
-    };
-    widget.setAttribute('assistant-overrides', JSON.stringify(overrides));
-
-    // 3) (Optional) Also log basic events to Make (client-side)
-    const MAKE_WEBHOOK = "https://hook.eu1.make.com/REPLACE_WITH_YOUR_MAKE_WEBHOOK";
-    function logToMake(event, extra={}) {
-      if (!MAKE_WEBHOOK.startsWith("https://hook")) return; // skip until you paste URL
-      fetch(MAKE_WEBHOOK, {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ source:"client", event, rid, token, ...extra })
-      }).catch(()=>{});
-    }
-    widget.addEventListener('call-start',  () => logToMake('call-start'));
-    widget.addEventListener('call-end',    () => logToMake('call-end'));
-    widget.addEventListener('error', (e) => logToMake('error', { detail:String(e?.detail||"") }));
+    }));
   </script>
 </body>
 </html>
